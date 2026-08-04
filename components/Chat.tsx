@@ -73,7 +73,7 @@ export default function Chat({ session }: { session: any }) {
 
       <div className="md:hidden absolute top-4 left-4 z-50">
   <Sheet>
-    <SheetTrigger asChild>
+    <SheetTrigger>
       <button className="inline-flex items-center justify-center rounded-lg border border-gray-300 p-2 hover:bg-gray-100">
         <Menu className="w-5 h-5" />
       </button>

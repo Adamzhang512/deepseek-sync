@@ -1,5 +1,4 @@
 'use client'
-import { LocalizationVariables } from '@supabase/auth-ui-shared'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { Auth } from '@supabase/auth-ui-react'
@@ -7,7 +6,7 @@ import { ThemeSupa } from '@supabase/auth-ui-shared'
 import Chat from '@/components/Chat'
 
 export default function Home() {
-  const localization: LocalizationVariables = {
+  const localization = {
   variables: {
     sign_up: {
       email_label: '邮箱地址',

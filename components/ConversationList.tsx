@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 
 const supabase = createClient()
 
@@ -39,6 +39,22 @@ export default function ConversationList({ activeId, onSelect }: {
     }
   }
 
+  const deleteConversation = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation() // 防止触发选中会话
+    if (!confirm('确定要删除这个对话吗？')) return
+
+    const res = await fetch(`/api/conversations/${id}`, { method: 'DELETE' })
+    if (res.ok) {
+      // 如果删除的是当前选中的对话，切换为空
+      if (activeId === id) {
+        onSelect(null as any)
+      }
+      fetchConversations()
+    } else {
+      alert('删除失败，请重试')
+    }
+  }
+
   return (
     <div className="flex flex-col h-full">
       <div className="p-2">
@@ -46,18 +62,24 @@ export default function ConversationList({ activeId, onSelect }: {
           <Plus className="w-4 h-4 mr-2" /> 新建对话
         </Button>
       </div>
-      {/* 会话列表可滚动区域 */}
       <div className="flex-1 overflow-y-auto">
         {conversations.map((conv) => (
-          <button
+          <div
             key={conv.id}
-            onClick={() => onSelect(conv.id)}
-            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 truncate ${
+            className={`group flex items-center justify-between w-full text-left px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer ${
               activeId === conv.id ? 'bg-gray-200 font-medium' : ''
             }`}
+            onClick={() => onSelect(conv.id)}
           >
-            {conv.title || '新对话'}
-          </button>
+            <span className="truncate flex-1">{conv.title || '新对话'}</span>
+            <button
+              onClick={(e) => deleteConversation(conv.id, e)}
+              className="ml-2 p-1 rounded hover:bg-red-100 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+              title="删除对话"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
         ))}
       </div>
     </div>

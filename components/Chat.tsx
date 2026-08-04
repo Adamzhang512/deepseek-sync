@@ -62,7 +62,7 @@ export default function Chat({ session }: { session: any }) {
   return (
     <>
       {/* 桌面端侧边栏 */}
-      <aside className="w-80 border-r hidden md:flex flex-col">
+      <aside className="w-80 border-r hidden md:flex flex-col overflow-hidden">
         <div className="p-4 border-b font-semibold">{session.user.email}</div>
         {ConversationListComponent}
         <div className="p-4 border-t mt-auto">

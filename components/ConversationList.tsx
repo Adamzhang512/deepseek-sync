@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
-import { ScrollArea } from '@/components/ui/scroll-area'
 
 const supabase = createClient()
 
@@ -47,7 +46,8 @@ export default function ConversationList({ activeId, onSelect }: {
           <Plus className="w-4 h-4 mr-2" /> 新建对话
         </Button>
       </div>
-      <ScrollArea className="flex-1">
+      {/* 会话列表可滚动区域 */}
+      <div className="flex-1 overflow-y-auto">
         {conversations.map((conv) => (
           <button
             key={conv.id}
@@ -59,7 +59,7 @@ export default function ConversationList({ activeId, onSelect }: {
             {conv.title || '新对话'}
           </button>
         ))}
-      </ScrollArea>
+      </div>
     </div>
   )
 }

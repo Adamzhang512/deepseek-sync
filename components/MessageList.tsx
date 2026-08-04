@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Loader2 } from 'lucide-react'
 
 export default function MessageList({ messages, loading }: { messages: any[], loading: boolean }) {
@@ -12,7 +11,7 @@ export default function MessageList({ messages, loading }: { messages: any[], lo
   }, [messages, loading])
 
   return (
-    <ScrollArea className="flex-1 p-4">
+    <div className="flex-1 overflow-y-auto p-4" style={{ minHeight: 0 }}>
       <div className="max-w-3xl mx-auto space-y-4">
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -32,6 +31,6 @@ export default function MessageList({ messages, loading }: { messages: any[], lo
         )}
         <div ref={bottomRef} />
       </div>
-    </ScrollArea>
+    </div>
   )
 }

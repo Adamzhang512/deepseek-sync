@@ -61,6 +61,7 @@ export default function Chat({ session }: { session: any }) {
 
   return (
     <>
+      {/* 桌面端侧边栏 */}
       <aside className="w-80 border-r hidden md:flex flex-col">
         <div className="p-4 border-b font-semibold">{session.user.email}</div>
         {ConversationListComponent}
@@ -71,20 +72,30 @@ export default function Chat({ session }: { session: any }) {
         </div>
       </aside>
 
+      {/* 移动端菜单按钮 */}
       <div className="md:hidden absolute top-4 left-4 z-50">
-  <Sheet>
-    <SheetTrigger>
-      <button className="inline-flex items-center justify-center rounded-lg border border-gray-300 p-2 hover:bg-gray-100">
-        <Menu className="w-5 h-5" />
-      </button>
-    </SheetTrigger>
-    <SheetContent side="left" className="p-0 w-80">
-      ...
-    </SheetContent>
-  </Sheet>
-</div>
+        <Sheet>
+          <SheetTrigger>
+            <button className="inline-flex items-center justify-center rounded-lg border border-gray-300 p-2 hover:bg-gray-100">
+              <Menu className="w-5 h-5" />
+            </button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0 w-80">
+            <div className="flex flex-col h-full">
+              <div className="p-4 border-b font-semibold">{session.user.email}</div>
+              {ConversationListComponent}
+              <div className="p-4 border-t mt-auto">
+                <Button variant="outline" size="sm" onClick={() => supabase.auth.signOut()}>
+                  <LogOut className="w-4 h-4 mr-2" /> 登出
+                </Button>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
 
-      <main className="flex-1 flex flex-col">
+      {/* 聊天主区域：加上 minHeight:0 阻止撑开父容器 */}
+      <main className="flex-1 flex flex-col overflow-hidden" style={{ minHeight: 0 }}>
         {conversationId ? (
           <>
             <MessageList messages={messages} loading={loading} />

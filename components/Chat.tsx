@@ -75,11 +75,9 @@ export default function Chat({ session }: { session: any }) {
       {/* 移动端菜单按钮 */}
       <div className="md:hidden absolute top-4 left-4 z-50">
         <Sheet>
-          <SheetTrigger>
-            <button className="inline-flex items-center justify-center rounded-lg border border-gray-300 p-2 hover:bg-gray-100">
-              <Menu className="w-5 h-5" />
-            </button>
-          </SheetTrigger>
+          <SheetTrigger className="inline-flex items-center justify-center rounded-lg border border-gray-300 p-2 hover:bg-gray-100">
+            <Menu className="w-5 h-5" />
+        </SheetTrigger>
           <SheetContent side="left" className="p-0 w-80">
             <div className="flex flex-col h-full">
               <div className="p-4 border-b font-semibold">{session.user.email}</div>

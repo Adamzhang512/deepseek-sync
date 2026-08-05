@@ -11,21 +11,29 @@ export default function MessageList({ messages, loading }: { messages: any[], lo
   }, [messages, loading])
 
   return (
-    <div className="flex-1 overflow-y-auto p-4" style={{ minHeight: 0 }}>
-      <div className="max-w-3xl mx-auto space-y-4">
+    <div className="flex-1 overflow-y-auto px-4 py-6" style={{ minHeight: 0 }}>
+      <div className="max-w-3xl mx-auto space-y-6">
         {messages.map((msg) => (
-          <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] rounded-lg px-4 py-2 ${
-              msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'
-            }`}>
+          <div
+            key={msg.id}
+            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
+            <div
+              className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm ${
+                msg.role === 'user'
+                  ? 'bg-[var(--primary)] text-white rounded-br-md'
+                  : 'bg-white text-[var(--foreground)] border border-[var(--border)] rounded-bl-md'
+              }`}
+            >
               {msg.content}
             </div>
           </div>
         ))}
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-gray-100 rounded-lg px-4 py-2 flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" /> 思考中...
+            <div className="bg-white border border-[var(--border)] rounded-2xl rounded-bl-md px-4 py-3 shadow-sm flex items-center gap-2 text-sm text-[var(--muted-foreground)]">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              AI 正在思考...
             </div>
           </div>
         )}

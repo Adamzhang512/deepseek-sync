@@ -43,13 +43,13 @@ export default function Chat({ session }: { session: any }) {
     return () => { supabase.removeChannel(channel) }
   }, [conversationId])
 
-  const handleSend = async (content: string) => {
+  const handleSend = async (content: string, model: string) => {
     if (!conversationId) return
     setLoading(true)
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ conversationId, message: content }),
+      body: JSON.stringify({ conversationId, message: content, model }),
     })
     if (!res.ok) {
       console.error('发送失败')
@@ -77,7 +77,7 @@ export default function Chat({ session }: { session: any }) {
         <Sheet>
           <SheetTrigger className="inline-flex items-center justify-center rounded-lg border border-gray-300 p-2 hover:bg-gray-100">
             <Menu className="w-5 h-5" />
-        </SheetTrigger>
+          </SheetTrigger>
           <SheetContent side="left" className="p-0 w-80">
             <div className="flex flex-col h-full">
               <div className="p-4 border-b font-semibold">{session.user.email}</div>
@@ -92,7 +92,7 @@ export default function Chat({ session }: { session: any }) {
         </Sheet>
       </div>
 
-      {/* 聊天主区域：加上 minHeight:0 阻止撑开父容器 */}
+      {/* 聊天主区域 */}
       <main className="flex-1 flex flex-col overflow-hidden" style={{ minHeight: 0 }}>
         {conversationId ? (
           <>

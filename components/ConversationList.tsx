@@ -21,8 +21,37 @@ export default function ConversationList({ activeId, onSelect }: {
     setConversations(data || [])
   }
 
+  // 初始加载列表
   useEffect(() => {
     fetchConversations()
+  }, [])
+
+  // 新增：订阅 conversations 表的 UPDATE 事件，实现标题实时更新
+  useEffect(() => {
+    const channel = supabase
+      .channel('conversations-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'conversations',
+        },
+        (payload) => {
+          // 当某个会话被更新时，替换本地列表中对应的会话数据
+          setConversations((prev) =>
+            prev.map((conv) =>
+              conv.id === payload.new.id ? { ...conv, ...payload.new } : conv
+            )
+          )
+        }
+      )
+      .subscribe()
+
+    // 组件卸载时移除订阅
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const createNew = async () => {
@@ -40,12 +69,11 @@ export default function ConversationList({ activeId, onSelect }: {
   }
 
   const deleteConversation = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation() // 防止触发选中会话
+    e.stopPropagation()
     if (!confirm('确定要删除这个对话吗？')) return
 
     const res = await fetch(`/api/conversations/${id}`, { method: 'DELETE' })
     if (res.ok) {
-      // 如果删除的是当前选中的对话，切换为空
       if (activeId === id) {
         onSelect(null as any)
       }

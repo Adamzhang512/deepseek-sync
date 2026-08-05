@@ -2,12 +2,32 @@ import { NextRequest } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import OpenAI from 'openai'
 
+// 模型配置映射表
+const MODEL_CONFIGS: Record<string, { apiKey: string; baseURL: string; model: string }> = {
+  deepseek: {
+    apiKey: process.env.DEEPSEEK_API_KEY!,
+    baseURL: 'https://api.deepseek.com/v1',
+    model: 'deepseek-chat',
+  },
+  doubao: {
+    apiKey: process.env.DOUBAO_API_KEY!,
+    baseURL: process.env.DOUBAO_BASE_URL!,
+    model: process.env.DOUBAO_MODEL!,
+  },
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return new Response('Unauthorized', { status: 401 })
 
-  const { conversationId, message } = await req.json()
+  const { conversationId, message, model = 'deepseek' } = await req.json()
+  // 默认使用 deepseek，前端传 doubao 时切换
+
+  const config = MODEL_CONFIGS[model]
+  if (!config) {
+    return Response.json({ error: '不支持的模型' }, { status: 400 })
+  }
 
   // 1. 保存用户消息
   const { data: userMsg, error: userError } = await supabase
@@ -17,10 +37,10 @@ export async function POST(req: NextRequest) {
     .single()
   if (userError) return new Response('Failed to save user message', { status: 500 })
 
-  // 2. 初始化 DeepSeek 客户端
-  const deepseek = new OpenAI({
-    apiKey: process.env.DEEPSEEK_API_KEY!,
-    baseURL: 'https://api.deepseek.com/v1',
+  // 2. 初始化对应模型的 OpenAI 客户端
+  const aiClient = new OpenAI({
+    apiKey: config.apiKey,
+    baseURL: config.baseURL,
   })
 
   // 3. 获取历史消息作为上下文
@@ -32,9 +52,9 @@ export async function POST(req: NextRequest) {
 
   const messages = history?.map(m => ({ role: m.role, content: m.content })) || []
 
-  // 4. 调用 DeepSeek 生成回复
-  const completion = await deepseek.chat.completions.create({
-    model: 'deepseek-chat',
+  // 4. 调用选定的模型生成回复
+  const completion = await aiClient.chat.completions.create({
+    model: config.model,
     messages: messages as any,
   })
 
@@ -49,14 +69,13 @@ export async function POST(req: NextRequest) {
 
   if (aiError) return new Response('Failed to save AI message', { status: 500 })
 
-  // 6. 自动生成标题（如果是首次对话）
+  // 6. 自动生成标题（首次对话且标题为默认值时）
   try {
     const { count } = await supabase
       .from('messages')
       .select('*', { count: 'exact', head: true })
       .eq('conversation_id', conversationId)
 
-    // 仅当消息数 <= 2（用户+AI各一条）且标题为默认值时生成
     if (count !== null && count <= 2) {
       const { data: conv } = await supabase
         .from('conversations')
@@ -65,10 +84,9 @@ export async function POST(req: NextRequest) {
         .single()
 
       if (conv && (conv.title === '新对话' || conv.title === '')) {
-        // 用第一句用户消息的前100字作为输入，让 DeepSeek 生成标题
         const firstUserMsg = message.slice(0, 100)
-        const titleCompletion = await deepseek.chat.completions.create({
-          model: 'deepseek-chat',
+        const titleCompletion = await aiClient.chat.completions.create({
+          model: config.model, // 用当前选定的模型生成标题
           messages: [
             { role: 'system', content: '你是一个标题生成助手。根据用户的第一句话，生成一个不超过10个字的简短标题，只返回标题本身，不要带标点。' },
             { role: 'user', content: `请为以下对话生成标题：${firstUserMsg}` },
@@ -79,7 +97,6 @@ export async function POST(req: NextRequest) {
 
         const newTitle = titleCompletion.choices[0]?.message?.content?.trim() || '未命名对话'
 
-        // 更新标题
         await supabase
           .from('conversations')
           .update({ title: newTitle })
@@ -87,7 +104,6 @@ export async function POST(req: NextRequest) {
       }
     }
   } catch (e) {
-    // 标题生成失败不影响主流程，只记录日志
     console.error('自动命名失败:', e)
   }
 

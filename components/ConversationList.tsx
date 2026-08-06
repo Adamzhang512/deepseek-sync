@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, MoreHorizontal, Trash2, Pencil } from 'lucide-react'
 
 const supabase = createClient()
 
@@ -12,6 +12,10 @@ export default function ConversationList({ activeId, onSelect }: {
   onSelect: (id: string) => void
 }) {
   const [conversations, setConversations] = useState<any[]>([])
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editTitle, setEditTitle] = useState('')
+  const menuRef = useRef<HTMLDivElement>(null)
 
   const fetchConversations = async () => {
     const { data } = await supabase
@@ -25,6 +29,7 @@ export default function ConversationList({ activeId, onSelect }: {
     fetchConversations()
   }, [])
 
+  // 实时更新标题
   useEffect(() => {
     const channel = supabase
       .channel('conversations-changes')
@@ -33,6 +38,17 @@ export default function ConversationList({ activeId, onSelect }: {
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
+  }, [])
+
+  // 点击外部关闭菜单
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpenId(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   const createNew = async () => {
@@ -49,8 +65,7 @@ export default function ConversationList({ activeId, onSelect }: {
     }
   }
 
-  const deleteConversation = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation()
+  const deleteConversation = async (id: string) => {
     if (!confirm('确定要删除这个对话吗？')) return
     const res = await fetch(`/api/conversations/${id}`, { method: 'DELETE' })
     if (res.ok) {
@@ -59,6 +74,20 @@ export default function ConversationList({ activeId, onSelect }: {
     } else {
       alert('删除失败，请重试')
     }
+    setMenuOpenId(null)
+  }
+
+  const startRename = (id: string, currentTitle: string) => {
+    setEditingId(id)
+    setEditTitle(currentTitle)
+    setMenuOpenId(null)
+  }
+
+  const saveRename = async (id: string) => {
+    if (!editTitle.trim()) return
+    await supabase.from('conversations').update({ title: editTitle.trim() }).eq('id', id)
+    setEditingId(null)
+    fetchConversations()
   }
 
   return (
@@ -73,22 +102,61 @@ export default function ConversationList({ activeId, onSelect }: {
           <div
             key={conv.id}
             onClick={() => onSelect(conv.id)}
-            className={`group flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
+            className={`group relative flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
               activeId === conv.id
                 ? 'bg-[var(--primary)] text-white'
                 : 'hover:bg-gray-100 text-[var(--foreground)]'
             }`}
           >
-            <span className="truncate flex-1 text-sm">{conv.title || '新对话'}</span>
-            <button
-              onClick={(e) => deleteConversation(conv.id, e)}
-              className={`ml-2 p-1 rounded-lg hover:bg-red-100 ${
-                activeId === conv.id ? 'text-white hover:text-red-500' : 'text-gray-400 hover:text-red-500'
-              } opacity-0 group-hover:opacity-100 transition-opacity`}
-              title="删除对话"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            {editingId === conv.id ? (
+              <input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                onBlur={() => saveRename(conv.id)}
+                onKeyDown={(e) => { if (e.key === 'Enter') saveRename(conv.id) }}
+                className="flex-1 bg-white text-black rounded px-2 py-1 text-sm outline-none"
+                autoFocus
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <span className="truncate flex-1 text-sm">{conv.title || '新对话'}</span>
+            )}
+
+            {!editingId && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setMenuOpenId(menuOpenId === conv.id ? null : conv.id)
+                }}
+                className={`ml-2 p-1 rounded-lg hover:bg-black/10 ${
+                  activeId === conv.id ? 'text-white/80 hover:text-white' : 'text-gray-400 hover:text-gray-600'
+                } opacity-0 group-hover:opacity-100 transition-opacity`}
+              >
+                <MoreHorizontal className="w-4 h-4" />
+              </button>
+            )}
+
+            {/* 弹出菜单 */}
+            {menuOpenId === conv.id && (
+              <div
+                ref={menuRef}
+                className="absolute right-0 top-full mt-1 w-36 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1 text-sm text-gray-700"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2"
+                  onClick={() => startRename(conv.id, conv.title)}
+                >
+                  <Pencil className="w-4 h-4" /> 重命名
+                </button>
+                <button
+                  className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-red-500"
+                  onClick={() => deleteConversation(conv.id)}
+                >
+                  <Trash2 className="w-4 h-4" /> 删除
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>

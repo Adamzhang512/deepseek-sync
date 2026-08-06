@@ -81,3 +81,11 @@ body,
 ::-webkit-scrollbar-thumb:hover {
   background: #a1a1a6;
 }
+/* 隐藏滚动条但保留滚动功能 */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
